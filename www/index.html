@@ -17,71 +17,79 @@
     <script src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
-    <!--
+    <style>
+      #bodyOrders {display: none;}
+      #bodyResources {display: none;}
+      #bodySetup {display: none;}
+    </style>
     <script>
-        window.onload = function(){
-          document.addEventListener("deviceready", init, false);
-        }
-        function init() {
-          var ordersButton = document.getElementByID("btnorders");
-          ordersButton.addEventListener("click", openPageOrders, false);
-          var resourcesButton = document.getElementByID("btnresources");
-          resourcesButton.addEventListener("click", openPageResources, false);
-          var setupButton = document.getElementByID("btnsetup");
-          setupButton.addEventListener("click", openPageSetup, false);
-        }
-        function openPageOrders(){
-          window.location.href = "www/order.html";
-        }
-        function openPageResources(){
-          window.location = "resources.html";
-        }
-        function openPageSetup(){
-          window.location = "setup.html";
-        }
+      function openPageOrders() {
+        document.getElementById('bodyOrders').style.display = 'block';
+        document.getElementById('bodyMain').style.display = 'none';
+      }
+      function openPageResources() {
+        document.getElementById('bodyResources').style.display = 'block';
+        document.getElementById('bodyMain').style.display = 'none';
+      }
+      function openPageSetup() {
+        document.getElementById('bodySetup').style.display = 'block';
+        document.getElementById('bodyMain').style.display = 'none';
+      }
+      function openPageMain() {
+        document.getElementById('bodyOrders').style.display = 'none';
+        document.getElementById('bodyResources').style.display = 'none';
+        document.getElementById('bodySetup').style.display = 'none';
+        document.getElementById('bodyMain').style.display = 'block';
+      }
     </script>
-    -->
-    <script>
-        window.onload = function() {
-          document.addEventListener("deviceready", init, false);
-        }
-        function init() {
-          var ordersButton = document.getElementById("btnOrders");
-          ordersButton.addEventListener("click", openPageOrders, false);
-          var resourcesButton = document.getElementById("btnResources");
-          resourcesButton.addEventListener("click", openPageResources, false);
-          var setupButton = document.getElementById("btnSetup");
-          setupButton.addEventListener("click", openPageSetup, false);
-        }
-        function openPageOrders() {
-          window.location = "orders.html";
-        }
-        function openPageResources() {
-          window.location = "resources.html";
-        }
-        function openPageSetup() {
-          window.location = "setup.html";
-        }
-      </script>
-
-
-    <title>Hello World</title>
+    <title>Order Management System</title>
 </head>
 
 <body>
-    <div class="app">
-        <div id="deviceready" class="blink">
-            <p class="event listening"><small>Connecting to Device</small></p>
-            <p class="event received"><small>Device is Ready</small></p>
-            <h1><center>Ordner Manager Main</center></h1>
-        </div>
-        <div id= "buttons" class="btn-group-vertical" style="width:100%">
-            <button id="btnOrders" type="button" class="btn btn-primary">Orders</button>
-            <button id="btnResources" type="button" class="btn btn-primary" type="button">Ressources</button>
-            <button id="btnSetup" type="button" class="btn btn-primary" type="button">Setup</button>
+    <div id="deviceready" class="blink">
+        <p class="event listening"><small>Connecting to Device</small></p>
+        <p class="event received"><small>Device is Ready</small></p>
+    </div>
+    <div id="bodyMain">
+        <div class="app">
+            <h1><center>Order Manager</center></h1>
+            <div id= "buttons" class="btn-group-vertical" style="width:100%">
+                <button id="btnOrders" class="btn btn-primary"
+                type="button" onClick="openPageOrders()">Orders</button>
+                <button id="btnResources" type="button" class="btn btn-primary"
+                type="button" onClick=openPageResources()>Ressources</button>
+                <button id="btnSetup" type="button" class="btn btn-primary"
+                type="button" onClick=openPageSetup()>Setup</button>
+            </div>
         </div>
     </div>
-
+    <div id="bodyOrders">
+        <div class="app">
+            <h1><center>Orders</center></h1>
+            <div id= "buttons" class="btn-group-vertical" style="width:100%">
+                <button id="btnBackOrders" type="button" class="btn btn-primary"
+                type="button" onClick="openPageMain()">Back</button>
+            </div>
+        </div>
+    </div>
+    <div id="bodyResources">
+        <div class="app">
+            <h1><center>Resources</center></h1>
+            <div id= "buttons" class="btn-group-vertical" style="width:100%">
+                <button id="btnBackResources" type="button" class="btn btn-primary"
+                type="button" onClick="openPageMain()">Back</button>
+            </div>
+        </div>
+    </div>
+    <div id="bodySetup">
+        <div class="app">
+            <h1><center>Setup</center></h1>
+            <div id= "buttons" class="btn-group-vertical" style="width:100%">
+                <button id="btnBackSetup" type="button" class="btn btn-primary"
+                type="button" onClick="openPageMain()">Back</button>
+            </div>
+        </div>
+    </div>
     <script type="text/javascript">
         app.initialize();
     </script>
