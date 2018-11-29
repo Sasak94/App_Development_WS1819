@@ -93,11 +93,9 @@
         }
         // called when a message arrives
         function onMessageArrived(message) {
-          //console.log("MessageCouter = " + messageCounter);
           messageCounter++;
           last_MQTT_Message = message.payloadString;
           console.log("onMessageArrived: QoS: " + message.qos);
-          //console.log(message.payloadString);
           var mqttMsgCounter = document.getElementById("mqtt_message_counter");
           mqttMsgCounter.innerHTML = String(messageCounter);
           var mqttMsg = document.getElementById("mqtt_message");
@@ -108,12 +106,10 @@
             return;
           }
           mqttMsg.innerHTML = JSON.stringify(jsonData[0]);
-          //console.log(JSON.stringify(jsonData[0]));
           if (jsonData.order == undefined){
               updateResourceStatus();
             }
             else {
-              //updateResources(jsonData.resources);
               updateOrderStatus(jsonData);
             }
         }
@@ -173,7 +169,7 @@
         console.log(sqlRes.M);
         console.log("sqlRes-Length: " + sqlRes.length);
         var length = Math.min(sqlRes.length, 10);
-        resourcesNearby=[];
+        //resourcesNearby=[];
         for (var i = 0; i < length; i++) {
           var row = trs.rows[i];
           var cell_ssid = row.cells[0];
@@ -185,6 +181,7 @@
           cell_time.innerHTML = sqlRes[i].time;
           console.log("Time: " + cell_time.innerHTML);
         }
+        updateResourceAvailability();
       }
       function updateOrderStatus(var1) {
         console.log("updateOrderStatus:");
@@ -202,37 +199,40 @@
           return;
         }
         var rowCount = 0;
-        //if (typeof resourcesNearby=='undefined'){
-        //  resourcesNearby=[];
-        //}
         for (let e of resArray) {
           //console.log("Element e: " + e);
           var rowO = ordersTable.rows[rowCount];
           var cellO = rowO.cells[0];
           cellO.innerHTML = e;
-          var t = resourcesNearby.find(function(obj) {
-            return obj == e;
-          });
-          if (t != undefined) {
-            cellO.style.backgroundColor = "green";
-          } else {
-            cellO.style.backgroundColor = "red";
-          }
           rowCount++;
         }
+        updateResourceAvailability();
       }
-      function updateResources(var1) {
-        console.log("updating Resources: " + var1.length)
-        //Array, das die mac-Adressen und Zeit speichert, aber wofür?
-        var length = var1.length;
-        for (var i = 0; i < length; i++) {
-          var rec = [];
-          //resourcesNearby = [];
-          rec.mac = var1[i].mac;
-          rec.time = var1[i].time;
-          resourcesNearby[i] = rec.mac;
+
+      function updateResourceAvailability(){
+        resourcesNearby=[];
+        var trs = document.getElementById("resource_status");
+        var tos = document.getElementById("ordersTable");
+        for (var i=0; i< trs.rows.length; i++){
+          var row = trs.rows[i];
+          var cell_ssid = row.cells[0];
+          resourcesNearby[i] = cell_ssid.innerHTML;
         }
-        console.log("Resources nearby: " + resourcesNearby);
+        for (var j=0; j<tos.rows.length; j++){
+          row = tos.rows[j];
+          cell_ssid = row.cells[0];
+          e = cell_ssid.innerHTML;
+          var t = resourcesNearby.find( function(obj) {return obj == e;});
+          if (t==""){
+
+          }
+          else if (t != undefined) {
+              cell_ssid.style.backgroundColor = "green";
+          }
+          else {
+              cell_ssid.style.backgroundColor = "red";
+          }
+        }
       }
 
     </script>
