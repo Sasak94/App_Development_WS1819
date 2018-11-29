@@ -17,6 +17,108 @@
     <script src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
+    <script src="js/paho-mqtt-min.js"></script>
+    <script>
+        window.onload = function() {
+          document.addEventListener("deviceready", init, false)
+        }
+        function init(){
+          var mqttServer = document.getElementById("mqttServer");
+          var mqttServerStr = localStorage.getItem("mqttServer");
+          if (mqttServerStr == null || mqttServerStr == "")
+                mqttServer.value = "<please enter mqtt broker IP address or hostname>";
+            else
+                mqttServer.value = mqttServerStr;
+          var mqttTopicResources = document.getElementById("mqttTopicResources");
+          var mqttTopicResourcesStr = localStorage.getItem("mqttResources");
+          if (mqttTopicResourcesStr == null || mqttTopicResourcesStr == "")
+              mqttTopicResources.value = "<please enter topic to subscribe>";
+          else
+              mqttTopicResources.value = mqttTopicResourcesStr;
+          var mqttTopicOrders = document.getElementById("mqttTopicOrders");
+          var mqttTopicOrdersStr = localStorage.getItem("mqttOrders");
+          if (mqttTopicOrdersStr == null || mqttTopicOrdersStr == "")
+              mqttTopicOrders.value = "<please enter topic to subscribe>";
+          else
+              mqttTopicOrders.value = mqttTopicOrdersStr;
+          // initialize table on resource page
+          var trs = document.getElementById("resource_status");
+          // Create an empty <tr> element and add it to the 1st position of the table:
+          for (var i = 0; i < 10; i++) {
+              var row = trs.insertRow(i);
+              // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+              var cell1 = row.insertCell(0);
+              var cell2 = row.insertCell(1);
+          }
+          // initialize table on orders page
+          var trsorders = document.getElementById("ordersTable");
+          // Create an empty <tr> element and add it to the 1st position of the table:
+          for (var i = 0; i < 10; i++) {
+              var row = trsorders.insertRow(i);
+              // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+              var cell1 = row.insertCell(0);
+          }
+          messageCounter = 0;
+          console.log("MessageCouter = " + messageCounter);
+          // Create a client instance
+          console.log("creating new client");
+          client = new Paho.MQTT.Client(mqttServer.value, 1884, "ClientId_g11");
+          // set callback handlers
+          client.onConnectionLost = onConnectionLost;
+          client.onMessageArrived = onMessageArrived;
+          // connect the client
+          client.connect({
+            onSuccess: onConnect,
+            cleanSession: false
+          });
+          resourcesNearby=[];
+        }
+        // called when the client connects
+        function onConnect() {
+            // Once a connection has been made, make a subscription and send a message.
+            console.log("onConnect");
+            // find topic
+            var mqttTopicOrders = document.getElementById("mqttTopicOrders");
+            console.log("subscribing to: " + mqttTopicOrders.value);
+            client.subscribe(mqttTopicOrders.value, {qos: 2});
+            var mqttTopicResources = document.getElementById("mqttTopicResources");
+            console.log("subscribing to: " + mqttTopicResources.value);
+            client.subscribe(mqttTopicResources.value, {qos: 2});
+        }
+        // called when the client loses its connection
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+            console.log("onConnectionLost:" + responseObject.errorMessage);
+            }
+        }
+        // called when a message arrives
+        function onMessageArrived(message) {
+          //console.log("MessageCouter = " + messageCounter);
+          messageCounter++;
+          last_MQTT_Message = message.payloadString;
+          console.log("onMessageArrived: QoS: " + message.qos);
+          //console.log(message.payloadString);
+          var mqttMsgCounter = document.getElementById("mqtt_message_counter");
+          mqttMsgCounter.innerHTML = String(messageCounter);
+          var mqttMsg = document.getElementById("mqtt_message");
+          var jsonData;
+          try {
+            jsonData = JSON.parse(message.payloadString);
+          } catch (e) {
+            return;
+          }
+          mqttMsg.innerHTML = JSON.stringify(jsonData[0]);
+          //console.log(JSON.stringify(jsonData[0]));
+          if (jsonData.order == undefined){
+              updateResourceStatus();
+            }
+            else {
+              //updateResources(jsonData.resources);
+              updateOrderStatus(jsonData);
+            }
+        }
+    </script>
+    <!-- Ende MQTT Einbindung -->
     <style>
       #bodyOrders {display: none;}
       #bodyResources {display: none;}
@@ -41,6 +143,98 @@
         document.getElementById('bodySetup').style.display = 'none';
         document.getElementById('bodyMain').style.display = 'block';
       }
+      function buttonSubmitMQTT() {
+        console.log("updating MQTT connection data.")
+        var mqttServer = document.getElementById("mqttServer");
+        console.log(mqttServer.value);
+        localStorage.setItem("mqttServer", mqttServer.value);
+        var mqttResources = document.getElementById("mqttTopicResources");
+        console.log(mqttResources.value);
+        localStorage.setItem("mqttResources", mqttResources.value);
+        var mqttOrders = document.getElementById("mqttTopicOrders");
+        console.log(mqttOrders.value);
+        localStorage.setItem("mqttOrders", mqttOrders.value);
+        // Create a client instance
+        client = new Paho.MQTT.Client(mqttServer.value, 1884, "clientId_g11");
+        // set callback handlers
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+        // connect the client
+        client.connect({
+          onSuccess: onConnect
+        });
+      }
+      function updateResourceStatus() {
+        console.log("updating Resource Status");
+        console.log(last_MQTT_Message);
+        var trs = document.getElementById("resource_status");
+        var sqlRes = JSON.parse(last_MQTT_Message);
+        console.log("sqlRes: " + sqlRes);
+        console.log(sqlRes.M);
+        console.log("sqlRes-Length: " + sqlRes.length);
+        var length = Math.min(sqlRes.length, 10);
+        resourcesNearby=[];
+        for (var i = 0; i < length; i++) {
+          var row = trs.rows[i];
+          var cell_ssid = row.cells[0];
+          var cell_time = row.cells[1];
+          // Add some text to the new cells:
+          cell_ssid.innerHTML = sqlRes[i].mac;
+          resourcesNearby[i]=sqlRes[i].mac;
+          console.log("SSID: " + cell_ssid.innerHTML);
+          cell_time.innerHTML = sqlRes[i].time;
+          console.log("Time: " + cell_time.innerHTML);
+        }
+      }
+      function updateOrderStatus(var1) {
+        console.log("updateOrderStatus:");
+        //console.log(JSON.stringify(jsonData));
+        //console.log("List required resources");
+        console.log(var1.order);
+        var orderTitle = document.getElementById("order_title");
+        orderTitle.innerHTML = var1.order;
+        var resArray;
+        try {
+          resArray = JSON.parse(var1.resources);
+        } catch (e) {
+          console.log("error parsing JSON string");
+          console.log(var1.resources);
+          return;
+        }
+        var rowCount = 0;
+        //if (typeof resourcesNearby=='undefined'){
+        //  resourcesNearby=[];
+        //}
+        for (let e of resArray) {
+          //console.log("Element e: " + e);
+          var rowO = ordersTable.rows[rowCount];
+          var cellO = rowO.cells[0];
+          cellO.innerHTML = e;
+          var t = resourcesNearby.find(function(obj) {
+            return obj == e;
+          });
+          if (t != undefined) {
+            cellO.style.backgroundColor = "green";
+          } else {
+            cellO.style.backgroundColor = "red";
+          }
+          rowCount++;
+        }
+      }
+      function updateResources(var1) {
+        console.log("updating Resources: " + var1.length)
+        //Array, das die mac-Adressen und Zeit speichert, aber wofür?
+        var length = var1.length;
+        for (var i = 0; i < length; i++) {
+          var rec = [];
+          //resourcesNearby = [];
+          rec.mac = var1[i].mac;
+          rec.time = var1[i].time;
+          resourcesNearby[i] = rec.mac;
+        }
+        console.log("Resources nearby: " + resourcesNearby);
+      }
+
     </script>
     <title>Order Management System</title>
 </head>
@@ -70,11 +264,11 @@
                 <button id="btnBackOrders" class="btn btn-primary"
                 type="button" onClick="openPageMain()">Back</button>
             </div>
-            <div id= "tableOrders" style="width:100%">
-              <table id="tblOrders" class="table table-striped table-bordered table-hover" type="table">
-                <tr><th>Auftragsnummer</th><th>Auftragsinhalt</th><th>geplanter Start</th></tr>
-                <tr><td>123</td><td>Elektroinstallation Raum 456</td><td>2.1.2018</td></tr>
-              </table>
+            <div>
+              <label id="order_title"><h1></h1></label>
+              <center>
+                <table id="ordersTable" class="table table-striped table-bordered table-hover"></table>
+              </center>
             </div>
         </div>
     </div>
@@ -85,6 +279,11 @@
                 <button id="btnBackResources" type="button" class="btn btn-primary"
                 type="button" onClick="openPageMain()">Back</button>
             </div>
+            <div>
+              <center>
+                <table id="resource_status" class="table table-striped table-bordered table-hover"></table>
+              </center>
+            </div>
         </div>
     </div>
     <div id="bodySetup">
@@ -93,7 +292,19 @@
             <div id= "buttons" class="btn-group-vertical" style="width:100%">
                 <button id="btnBackSetup" type="button" class="btn btn-primary"
                 type="button" onClick="openPageMain()">Back</button>
+                <button id="btnMQTT" type="button" class="btn btn-primary"
+                onClick="buttonSubmitMQTT()">Submit MQTT subscription</button>
             </div>
+            <div class="form-group">
+                <label for="usr"><b>MQTT Server:</b></label>
+                <input type="text" class="form-control" onFocus="this.value='';" id="mqttServer">
+                <label for="usr"><b>MQTT Topic Resources:</b></label>
+                <input type="text" class="form-control" onFocus="this.value='';" id="mqttTopicResources">
+                <label for="usr"><b>MQTT Topic Orders:</b></label>
+                <input type="text" class="form-control" onFocus="this.value='';" id="mqttTopicOrders">
+            </div>
+            <div id="mqtt_message_counter"></div>
+            <div id="mqtt_message" style="width: 900px; height: 500px;"></div>
         </div>
     </div>
     <script type="text/javascript">
